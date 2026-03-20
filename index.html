@@ -173,21 +173,20 @@ h2{font-family:'DM Serif Display',serif;font-weight:400}
 <!-- SETTINGS MODAL -->
 <div id="settings-modal" class="modal-overlay" style="display:none">
   <div class="modal">
-    <h2>Konfiguracja GitHub Gist</h2>
+    <h2>Konfiguracja JSONBin.io</h2>
     <p class="modal-sub">
-      Zaloguj się na GitHub → Settings → Developer settings →<br>
-      Personal access tokens → Tokens (classic) → Generate new token (classic)<br>
-      Zaznacz zakres: <code>gist</code> → Generate token → skopiuj <code>ghp_...</code>
+      Zaloguj się na <a href="https://jsonbin.io" target="_blank">jsonbin.io</a> →
+      kliknij avatar → <b>API Keys</b> → skopiuj klucz zaczynający się od <code>$2a$...</code> lub <code>$2b$...</code>
     </p>
     <div class="form-group">
-      <label class="form-label">GitHub Token</label>
-      <input id="inp-token" class="form-input" placeholder="ghp_..." type="password">
+      <label class="form-label">Klucz API JSONBin</label>
+      <input id="inp-token" class="form-input" placeholder="$2a$10$..." type="password">
     </div>
     <div class="form-group">
-      <label class="form-label">Gist ID</label>
+      <label class="form-label">Bin ID</label>
       <div class="input-row">
         <input id="inp-gist" class="form-input" placeholder="abc123... lub utwórz nowy">
-        <button class="btn-secondary" onclick="createGist()" id="btn-create-gist">Utwórz nowy</button>
+        <button class="btn-secondary" onclick="createBin()" id="btn-create-gist">Utwórz nowy</button>
       </div>
     </div>
     <p id="modal-msg" class="form-msg" style="display:none"></p>
@@ -336,7 +335,7 @@ const GROUP_COLORS = {
 
 let state = {
   token: localStorage.getItem('fp_token') || '',
-  gistId: localStorage.getItem('fp_gist') || '',
+  binId: localStorage.getItem('fp_bin') || '',
   storage: {rounds:{}, history:[]},
   currentLeague: null,
   currentMatch: null,
@@ -344,57 +343,58 @@ let state = {
   currentStorageKey: '',
 };
 
-// ─── GIST ────────────────────────────────────────────────────────────────────
+// ─── JSONBIN.IO STORAGE ───────────────────────────────────────────────────────
 
-const GIST_FILE = 'football_predictor_data.json';
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
 
-async function gistLoad() {
-  if (!state.token || !state.gistId) return;
+async function jsonbinLoad() {
+  if (!state.token || !state.binId) return;
   showSync(true);
   try {
-    const r = await fetch(`https://api.github.com/gists/${state.gistId}`, {
-      headers: {Authorization:`token ${state.token}`, Accept:'application/vnd.github.v3+json'}
+    const r = await fetch(`${JSONBIN_BASE}/b/${state.binId}/latest`, {
+      headers: { 'X-Master-Key': state.token }
     });
-    if (!r.ok) throw new Error('Gist load failed');
+    if (!r.ok) throw new Error('Load failed: ' + r.status);
     const data = await r.json();
-    const file = data.files?.[GIST_FILE];
-    if (file) state.storage = JSON.parse(file.content);
-  } catch(e) { console.warn('Gist load:', e.message); }
+    state.storage = data.record || { rounds: {}, history: [] };
+  } catch(e) { console.warn('JSONBin load:', e.message); }
   showSync(false);
 }
 
-async function gistSave() {
-  if (!state.token || !state.gistId) return;
+async function jsonbinSave() {
+  if (!state.token || !state.binId) return;
   showSync(true);
   try {
-    await fetch(`https://api.github.com/gists/${state.gistId}`, {
-      method:'PATCH',
-      headers:{Authorization:`token ${state.token}`,'Content-Type':'application/json'},
-      body: JSON.stringify({files:{[GIST_FILE]:{content:JSON.stringify(state.storage,null,2)}}})
+    await fetch(`${JSONBIN_BASE}/b/${state.binId}`, {
+      method: 'PUT',
+      headers: { 'X-Master-Key': state.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(state.storage)
     });
-  } catch(e) { console.warn('Gist save:', e.message); }
+  } catch(e) { console.warn('JSONBin save:', e.message); }
   showSync(false);
 }
 
-async function createGist() {
+async function createBin() {
   const token = document.getElementById('inp-token').value.trim();
-  if (!token) { showModalMsg('Wklej najpierw token GitHub.', false); return; }
+  if (!token) { showModalMsg('Wklej najpierw klucz API JSONBin.', false); return; }
   document.getElementById('btn-create-gist').textContent = 'Tworzę...';
   try {
-    const r = await fetch('https://api.github.com/gists', {
-      method:'POST',
-      headers:{Authorization:`token ${token}`,'Content-Type':'application/json'},
-      body: JSON.stringify({
-        description:'Football Predictor — historia predykcji',
-        public:false,
-        files:{[GIST_FILE]:{content:JSON.stringify({rounds:{},history:[]},null,2)}}
-      })
+    const r = await fetch(`${JSONBIN_BASE}/b`, {
+      method: 'POST',
+      headers: {
+        'X-Master-Key': token,
+        'Content-Type': 'application/json',
+        'X-Bin-Name': 'football-predictor',
+        'X-Bin-Private': 'true'
+      },
+      body: JSON.stringify({ rounds: {}, history: [] })
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    document.getElementById('inp-gist').value = d.id;
-    showModalMsg('✓ Gist utworzony: ' + d.id, true);
-  } catch(e) { showModalMsg('✗ Błąd: ' + e.message + ' — sprawdź token i uprawnienia gist', false); }
+    const id = d.metadata?.id;
+    document.getElementById('inp-gist').value = id;
+    showModalMsg('✓ Bin utworzony: ' + id, true);
+  } catch(e) { showModalMsg('✗ Błąd: ' + e.message + ' — sprawdź klucz API', false); }
   document.getElementById('btn-create-gist').textContent = 'Utwórz nowy';
 }
 
@@ -568,7 +568,7 @@ function saveRound(matches, roundName) {
   state.storage.rounds[state.currentStorageKey] = {
     leagueId: state.currentLeague.id, roundName, matches
   };
-  gistSave();
+  jsonbinSave();
 }
 
 function selectMatch(idx) {
@@ -635,7 +635,7 @@ async function runAnalysis() {
       mx.id === m.id ? {...mx, predictions:pred, report} : mx
     );
     state.currentMatch = {...m, predictions:pred, report};
-    gistSave();
+    jsonbinSave();
 
     document.getElementById('match-pipeline').style.display = 'none';
     renderPredictions(pred, {});
@@ -732,7 +732,7 @@ async function runVerification() {
       mx.id === m.id ? {...mx, actual} : mx
     );
     state.currentMatch = {...m, actual};
-    gistSave();
+    jsonbinSave();
 
     renderResult(actual, m.predictions);
     const v = verifyPredictions(m.predictions, actual);
@@ -821,7 +821,7 @@ function archiveOld() {
       archived++;
     }
   });
-  if (archived>0) { gistSave(); renderHistory(); alert(`Zarchiwizowano ${archived} kolejek.`); }
+  if (archived>0) { jsonbinSave(); renderHistory(); alert(`Zarchiwizowano ${archived} kolejek.`); }
   else alert('Brak kolejek do archiwizacji (data ostatniego meczu jeszcze nie minęła).');
 }
 
@@ -829,7 +829,7 @@ function archiveOld() {
 
 function openSettings() {
   document.getElementById('inp-token').value = state.token;
-  document.getElementById('inp-gist').value = state.gistId;
+  document.getElementById('inp-gist').value = state.binId;
   document.getElementById('modal-msg').style.display = 'none';
   document.getElementById('settings-modal').style.display = 'flex';
 }
@@ -840,12 +840,12 @@ function closeSettings() {
 
 function saveSettings() {
   const t = document.getElementById('inp-token').value.trim();
-  const g = document.getElementById('inp-gist').value.trim();
-  state.token = t; state.gistId = g;
+  const b = document.getElementById('inp-gist').value.trim();
+  state.token = t; state.binId = b;
   localStorage.setItem('fp_token', t);
-  localStorage.setItem('fp_gist', g);
+  localStorage.setItem('fp_bin', b);
   closeSettings();
-  if (t && g) gistLoad();
+  if (t && b) jsonbinLoad();
 }
 
 function showModalMsg(msg, ok) {
@@ -859,7 +859,7 @@ function showModalMsg(msg, ok) {
 
 (async () => {
   renderHome();
-  if (state.token && state.gistId) await gistLoad();
+  if (state.token && state.binId) await jsonbinLoad();
   renderHome();
 })();
 </script>
