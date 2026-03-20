@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#020817;--bg2:#0f172a;--bg3:#1e293b;
+  --border:#1e293b;--border2:#334155;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#475569;--text4:#334155;
+  --accent:#6366f1;--accent2:#4f46e5;
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;
+}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit}
+a{color:var(--accent)}
+.screen{display:none;min-height:100vh;padding:32px 24px}
+.screen.active{display:block}
+.back-btn{background:none;border:none;color:var(--accent);font-size:14px;margin-bottom:24px;padding:0;display:flex;align-items:center;gap:6px}
+.back-btn:hover{opacity:.7}
+h1{font-family:'DM Serif Display',serif;font-weight:400}
+h2{font-family:'DM Serif Display',serif;font-weight:400}
+
+/* HOME */
+#home{max-width:1100px;margin:0 auto}
+.home-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:48px}
+.home-title{font-size:42px;line-height:1.1;color:var(--text)}
+.home-title span{color:var(--accent)}
+.home-subtitle{margin-top:12px;color:var(--text3);font-size:13px}
+.header-btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn-ghost{padding:10px 18px;background:var(--bg2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;font-size:13px}
+.btn-ghost:hover{border-color:var(--accent);color:var(--text)}
+.leagues-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+.league-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px 20px;text-align:left;position:relative;overflow:hidden;transition:all .2s}
+.league-card:hover{transform:translateY(-3px)}
+.league-card-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0}
+.league-flag{font-size:38px;margin-bottom:12px;display:block}
+.league-name{color:var(--text);font-weight:700;font-size:14px;margin-bottom:4px;font-family:'DM Serif Display',serif}
+.league-country{color:var(--text3);font-size:12px}
+.league-count{margin-top:10px;font-size:11px;color:var(--accent)}
+
+/* ROUND */
+#round-wrap{max-width:700px;margin:0 auto}
+.round-header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.round-flag{font-size:36px}
+.round-name{color:var(--text);font-family:'DM Serif Display',serif;font-size:26px}
+.round-sub{color:var(--text3);font-size:13px;margin-top:4px}
+.action-row{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+.btn-primary{padding:10px 20px;background:var(--accent2);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700}
+.btn-primary:hover{background:var(--accent)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{padding:10px 16px;background:var(--bg2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;font-size:13px}
+.btn-secondary:hover{border-color:var(--accent);color:var(--text)}
+.manual-box{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:16px;margin-bottom:20px}
+.manual-box p{color:var(--text2);font-size:12px;margin-bottom:8px}
+.manual-box textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);padding:8px 10px;font-size:13px;resize:vertical;font-family:inherit}
+.fixture-list{display:flex;flex-direction:column;gap:10px}
+.fixture-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all .15s;text-align:left;width:100%}
+.fixture-card:hover{border-color:var(--accent2);background:#0d1529}
+.fixture-teams{color:var(--text);font-weight:600;font-size:15px}
+.fixture-teams span{color:var(--text3)}
+.fixture-date{color:var(--text3);font-size:12px;margin-top:4px}
+.badge-done{font-size:11px;color:var(--green);background:#052e16;padding:2px 8px;border-radius:20px;border:1px solid #166534}
+.empty-state{text-align:center;padding:60px 0;color:var(--text4)}
+.empty-state .icon{font-size:48px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+
+/* MATCH */
+#match-wrap{max-width:780px;margin:0 auto}
+.match-header-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:28px 32px;margin-bottom:24px}
+.match-league-row{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.match-league-row span{color:var(--text3);font-size:13px}
+.match-title{font-size:28px;color:var(--text);margin-bottom:6px}
+.match-title .vs{color:var(--accent2)}
+.match-date{color:var(--text3);font-size:13px}
+.result-box{margin-top:14px;padding:10px 16px;background:#0c1a0e;border:1px solid #166534;border-radius:10px;display:inline-flex;gap:16px;align-items:center}
+.result-score{color:#86efac;font-weight:700;font-size:22px;font-family:'IBM Plex Mono',monospace}
+.result-info{color:#4ade80;font-size:12px}
+.analyze-cta{text-align:center;padding:48px 0}
+.btn-analyze{padding:14px 36px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;box-shadow:0 4px 20px #4f46e580}
+.btn-analyze:hover{transform:translateY(-2px);box-shadow:0 6px 28px #4f46e5aa}
+.btn-analyze:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.analyze-sub{color:var(--text4);font-size:13px;margin-top:12px}
+.pipeline{display:inline-flex;flex-direction:column;gap:12px;align-items:flex-start}
+.pipeline-step{display:flex;align-items:center;gap:10px;font-size:14px}
+.pipeline-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.dot-active{background:var(--accent);animation:pulse 1s infinite}
+.dot-done{background:var(--green)}
+.dot-idle{background:var(--bg3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.meta-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.meta-pill{padding:8px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px;font-size:12px;color:var(--text2)}
+.meta-pill b{color:#a5b4fc}
+.btn-verify{padding:8px 16px;background:var(--bg2);color:var(--text2);border:1px solid var(--border2);border-radius:10px;font-size:12px}
+.btn-verify:hover{border-color:var(--green);color:var(--green)}
+.key-factors{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-bottom:20px}
+.kf-title{color:var(--text3);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.kf-item{display:flex;gap:10px;margin-bottom:6px;align-items:flex-start}
+.kf-bullet{color:var(--accent);font-size:12px;margin-top:1px;flex-shrink:0}
+.kf-text{color:#cbd5e1;font-size:13px;line-height:1.5}
+.val-note{margin-top:10px;color:var(--text3);font-size:12px;font-style:italic;border-top:1px solid var(--border);padding-top:10px}
+.group-section{margin-bottom:20px}
+.group-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.group-bar{width:3px;height:16px;border-radius:2px}
+.group-label{color:var(--text3);font-size:12px;text-transform:uppercase;letter-spacing:1px}
+.events-list{display:flex;flex-direction:column;gap:6px}
+.event-row{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.event-label{color:#e2e8f0;font-size:13px;flex:0 0 220px}
+.event-bar-wrap{flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.event-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.event-pct{font-size:13px;font-weight:700;color:var(--text);min-width:36px;text-align:right;font-family:'IBM Plex Mono',monospace}
+.result-dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-green{background:var(--green);box-shadow:0 0 6px #22c55e88}
+.dot-red{background:var(--red);box-shadow:0 0 6px #ef444488}
+.error-box{padding:20px;background:#1c0505;border:1px solid #7f1d1d;border-radius:12px;color:#fca5a5;font-size:13px}
+
+/* HISTORY */
+#history-wrap{max-width:780px;margin:0 auto}
+.history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px}
+.history-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-bottom:14px}
+.history-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.history-league{display:flex;gap:8px;align-items:center}
+.history-league-name{color:var(--text);font-weight:600;font-size:15px}
+.history-date{color:var(--text3);font-size:12px;margin-top:4px}
+.history-pct{text-align:right}
+.history-pct-val{font-size:28px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.history-pct-label{color:var(--text3);font-size:11px}
+.history-match-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border)}
+.history-match-teams{color:#cbd5e1;font-size:13px}
+.history-match-right{display:flex;gap:10px;align-items:center}
+.history-score{color:var(--text2);font-size:13px;font-family:'IBM Plex Mono',monospace}
+.history-hits{font-size:12px;padding:2px 8px;border-radius:20px}
+
+/* SETTINGS MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:32px;width:100%;max-width:480px}
+.modal h2{margin-bottom:8px;font-size:20px}
+.modal-sub{color:var(--text2);font-size:13px;line-height:1.6;margin-bottom:24px}
+.modal-sub code{background:var(--bg3);padding:1px 5px;border-radius:4px;color:#a5f3fc;font-size:12px}
+.form-group{margin-bottom:16px}
+.form-label{color:var(--text2);font-size:12px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px}
+.form-input{width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit}
+.form-input:focus{outline:none;border-color:var(--accent)}
+.input-row{display:flex;gap:8px}
+.input-row .form-input{flex:1}
+.form-msg{font-size:13px;margin:0 0 16px}
+.form-msg.ok{color:var(--green)}
+.form-msg.err{color:var(--red)}
+.modal-btns{display:flex;gap:10px;justify-content:flex-end}
+.btn-cancel{padding:10px 20px;background:transparent;color:var(--text2);border:1px solid var(--border2);border-radius:8px;font-size:13px}
+.btn-save{padding:10px 20px;background:var(--accent2);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600}
+.btn-save:hover{background:var(--accent)}
+
+/* SYNC BADGE */
+.sync-badge{position:fixed;top:12px;right:12px;background:var(--bg2);color:var(--text2);padding:6px 12px;border-radius:8px;font-size:12px;z-index:999;border:1px solid var(--border2)}
+
+@media(max-width:600px){
+  .event-label{flex:0 0 160px;font-size:12px}
+  .home-title{font-size:30px}
+  .match-title{font-size:22px}
+  .leagues-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+}
+</style>
+</head>
+<body>
+
+<div id="sync-badge" class="sync-badge" style="display:none">Synchronizuję...</div>
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h2>Konfiguracja GitHub Gist</h2>
+    <p class="modal-sub">
+      Zaloguj się na GitHub → Settings → Developer settings →<br>
+      Personal access tokens → Tokens (classic) → Generate new token (classic)<br>
+      Zaznacz zakres: <code>gist</code> → Generate token → skopiuj <code>ghp_...</code>
+    </p>
+    <div class="form-group">
+      <label class="form-label">GitHub Token</label>
+      <input id="inp-token" class="form-input" placeholder="ghp_..." type="password">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Gist ID</label>
+      <div class="input-row">
+        <input id="inp-gist" class="form-input" placeholder="abc123... lub utwórz nowy">
+        <button class="btn-secondary" onclick="createGist()" id="btn-create-gist">Utwórz nowy</button>
+      </div>
+    </div>
+    <p id="modal-msg" class="form-msg" style="display:none"></p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeSettings()">Anuluj</button>
+      <button class="btn-save" onclick="saveSettings()">Zapisz</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: HOME -->
+<div id="screen-home" class="screen active" style="padding:40px 24px">
+  <div id="home">
+    <div class="home-header">
+      <div>
+        <h1 class="home-title">Football<br><span>Predictor</span></h1>
+        <p class="home-subtitle">Analiza AI · 20 zdarzeń · 11 rozgrywek</p>
+      </div>
+      <div class="header-btns">
+        <button class="btn-ghost" onclick="showScreen('history')">📋 Historia</button>
+        <button class="btn-ghost" onclick="openSettings()">⚙️ Ustawienia</button>
+      </div>
+    </div>
+    <div class="leagues-grid" id="leagues-grid"></div>
+  </div>
+</div>
+
+<!-- SCREEN: ROUND -->
+<div id="screen-round" class="screen">
+  <div id="round-wrap">
+    <button class="back-btn" onclick="showScreen('home')">← Powrót</button>
+    <div class="round-header">
+      <span class="round-flag" id="round-flag"></span>
+      <div>
+        <div class="round-name" id="round-league-name"></div>
+        <div class="round-sub" id="round-name-sub">Nadchodząca kolejka</div>
+      </div>
+    </div>
+    <div class="action-row">
+      <button class="btn-primary" id="btn-fetch" onclick="fetchFixtures()">🔍 Pobierz mecze z internetu</button>
+      <button class="btn-secondary" onclick="toggleManual()">✏️ Dodaj ręcznie</button>
+    </div>
+    <div id="manual-box" class="manual-box" style="display:none">
+      <p>Każdy mecz w nowej linii: <b>Team A vs Team B</b></p>
+      <textarea id="manual-input" rows="4" placeholder="Manchester City vs Arsenal&#10;Liverpool vs Chelsea"></textarea>
+      <button class="btn-primary" style="margin-top:8px" onclick="addManual()">Dodaj</button>
+    </div>
+    <div id="fixtures-empty" class="empty-state"><div class="icon">⚽</div><p>Brak meczów — pobierz z internetu lub dodaj ręcznie</p></div>
+    <div id="fixture-list" class="fixture-list"></div>
+  </div>
+</div>
+
+<!-- SCREEN: MATCH -->
+<div id="screen-match" class="screen">
+  <div id="match-wrap">
+    <button class="back-btn" onclick="showScreen('round')">← Kolejka</button>
+    <div class="match-header-card" id="match-header-card">
+      <div class="match-league-row"><span id="mh-flag"></span><span id="mh-league"></span></div>
+      <div class="match-title" id="mh-title"></div>
+      <div class="match-date" id="mh-date"></div>
+      <div id="mh-result"></div>
+    </div>
+    <div id="match-analyze-cta" class="analyze-cta">
+      <button class="btn-analyze" onclick="runAnalysis()">🤖 Uruchom analizę AI</button>
+      <p class="analyze-sub">Agent 1 (Researcher) → Agent 2 (Validator)</p>
+    </div>
+    <div id="match-pipeline" style="display:none;text-align:center;padding:48px 0">
+      <div class="pipeline">
+        <div class="pipeline-step" id="step1">
+          <div class="pipeline-dot dot-active" id="dot1"></div>
+          <span id="step1-text" style="color:#a5b4fc;font-size:14px">Agent 1 — Researcher: zbiera dane z internetu...</span>
+        </div>
+        <div class="pipeline-step" id="step2">
+          <div class="pipeline-dot dot-idle" id="dot2"></div>
+          <span id="step2-text" style="color:var(--text4);font-size:14px">Agent 2 — Validator: generuje 20 predykcji...</span>
+        </div>
+      </div>
+    </div>
+    <div id="match-error" class="error-box" style="display:none"></div>
+    <div id="match-results" style="display:none">
+      <div class="meta-row" id="meta-row"></div>
+      <div class="key-factors" id="key-factors" style="display:none"></div>
+      <div id="events-groups"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN: HISTORY -->
+<div id="screen-history" class="screen">
+  <div id="history-wrap">
+    <button class="back-btn" onclick="showScreen('home')">← Powrót</button>
+    <div class="history-header">
+      <h2 style="font-size:26px">Historia predykcji</h2>
+      <button class="btn-secondary" onclick="archiveOld()">📦 Archiwizuj zakończone</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+
+const LEAGUES = [
+  {id:"PL",  name:"Premier League",    country:"England",     flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", color:"#3D195B"},
+  {id:"PD",  name:"La Liga",           country:"Spain",       flag:"🇪🇸", color:"#EE1D24"},
+  {id:"BL1", name:"Bundesliga",        country:"Germany",     flag:"🇩🇪", color:"#D00027"},
+  {id:"SA",  name:"Serie A",           country:"Italy",       flag:"🇮🇹", color:"#1A56A0"},
+  {id:"FL1", name:"Ligue 1",           country:"France",      flag:"🇫🇷", color:"#0A3E7E"},
+  {id:"DED", name:"Eredivisie",        country:"Netherlands", flag:"🇳🇱", color:"#E8491D"},
+  {id:"PPL", name:"Primeira Liga",     country:"Portugal",    flag:"🇵🇹", color:"#006600"},
+  {id:"EKS", name:"Ekstraklasa",       country:"Poland",      flag:"🇵🇱", color:"#DC143C"},
+  {id:"I1",  name:"I Liga Polska",     country:"Poland",      flag:"🇵🇱", color:"#8B0000"},
+  {id:"UCL", name:"Liga Mistrzów",     country:"UEFA",        flag:"🏆", color:"#0B1560"},
+  {id:"UEL", name:"Liga Europy",       country:"UEFA",        flag:"🥈", color:"#F47921"},
+];
+
+const EVENTS = [
+  {key:"win_home",     label:"Wygrana gospodarzy",       group:"Wynik"},
+  {key:"draw",         label:"Remis",                    group:"Wynik"},
+  {key:"win_away",     label:"Wygrana gości",            group:"Wynik"},
+  {key:"dc_1x",        label:"Podwójna szansa 1X",       group:"Wynik"},
+  {key:"dc_x2",        label:"Podwójna szansa X2",       group:"Wynik"},
+  {key:"btts",         label:"BTTS — obie strzelą",      group:"Gole"},
+  {key:"over15",       label:"Over 1.5 goli",            group:"Gole"},
+  {key:"over25",       label:"Over 2.5 goli",            group:"Gole"},
+  {key:"over35",       label:"Over 3.5 goli",            group:"Gole"},
+  {key:"exact23",      label:"Dokładnie 2 lub 3 gole",   group:"Gole"},
+  {key:"ht_home",      label:"1. poł — wygrana gosp.",   group:"1. połowa"},
+  {key:"ht_draw",      label:"1. poł — remis",           group:"1. połowa"},
+  {key:"ht_over15",    label:"1. poł — Over 1.5",        group:"1. połowa"},
+  {key:"btts_2h",      label:"BTTS w 2. połowie",        group:"2. połowa"},
+  {key:"clean_home",   label:"Clean sheet gospod.",      group:"Obrona"},
+  {key:"clean_away",   label:"Clean sheet gości",        group:"Obrona"},
+  {key:"yellow_over4", label:"4+ żółte kartki",          group:"Kartki"},
+  {key:"red_card",     label:"Czerwona kartka",          group:"Kartki"},
+  {key:"penalty",      label:"Rzut karny",               group:"Inne"},
+  {key:"corner_over",  label:"Cornery Over 8.5",         group:"Inne"},
+];
+
+const GROUP_COLORS = {
+  "Wynik":"#6366f1","Gole":"#0ea5e9","1. połowa":"#8b5cf6",
+  "2. połowa":"#a855f7","Obrona":"#10b981","Kartki":"#f59e0b","Inne":"#64748b"
+};
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+
+let state = {
+  token: localStorage.getItem('fp_token') || '',
+  gistId: localStorage.getItem('fp_gist') || '',
+  storage: {rounds:{}, history:[]},
+  currentLeague: null,
+  currentMatch: null,
+  currentRoundName: '',
+  currentStorageKey: '',
+};
+
+// ─── GIST ────────────────────────────────────────────────────────────────────
+
+const GIST_FILE = 'football_predictor_data.json';
+
+async function gistLoad() {
+  if (!state.token || !state.gistId) return;
+  showSync(true);
+  try {
+    const r = await fetch(`https://api.github.com/gists/${state.gistId}`, {
+      headers: {Authorization:`token ${state.token}`, Accept:'application/vnd.github.v3+json'}
+    });
+    if (!r.ok) throw new Error('Gist load failed');
+    const data = await r.json();
+    const file = data.files?.[GIST_FILE];
+    if (file) state.storage = JSON.parse(file.content);
+  } catch(e) { console.warn('Gist load:', e.message); }
+  showSync(false);
+}
+
+async function gistSave() {
+  if (!state.token || !state.gistId) return;
+  showSync(true);
+  try {
+    await fetch(`https://api.github.com/gists/${state.gistId}`, {
+      method:'PATCH',
+      headers:{Authorization:`token ${state.token}`,'Content-Type':'application/json'},
+      body: JSON.stringify({files:{[GIST_FILE]:{content:JSON.stringify(state.storage,null,2)}}})
+    });
+  } catch(e) { console.warn('Gist save:', e.message); }
+  showSync(false);
+}
+
+async function createGist() {
+  const token = document.getElementById('inp-token').value.trim();
+  if (!token) { showModalMsg('Wklej najpierw token GitHub.', false); return; }
+  document.getElementById('btn-create-gist').textContent = 'Tworzę...';
+  try {
+    const r = await fetch('https://api.github.com/gists', {
+      method:'POST',
+      headers:{Authorization:`token ${token}`,'Content-Type':'application/json'},
+      body: JSON.stringify({
+        description:'Football Predictor — historia predykcji',
+        public:false,
+        files:{[GIST_FILE]:{content:JSON.stringify({rounds:{},history:[]},null,2)}}
+      })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    document.getElementById('inp-gist').value = d.id;
+    showModalMsg('✓ Gist utworzony: ' + d.id, true);
+  } catch(e) { showModalMsg('✗ Błąd: ' + e.message + ' — sprawdź token i uprawnienia gist', false); }
+  document.getElementById('btn-create-gist').textContent = 'Utwórz nowy';
+}
+
+// ─── CLAUDE API ───────────────────────────────────────────────────────────────
+
+async function callClaude(system, userMsg, useSearch) {
+  const body = {
+    model:'claude-sonnet-4-20250514',
+    max_tokens:1000,
+    system,
+    messages:[{role:'user',content:userMsg}]
+  };
+  if (useSearch) body.tools = [{type:'web_search_20250305',name:'web_search'}];
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const err = await r.text();
+    throw new Error(`API ${r.status}: ${err}`);
+  }
+  const data = await r.json();
+  return data.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+}
+
+const SYS_RESEARCHER = `Jesteś ekspertem analitykiem piłkarskim z dostępem do internetu.
+Dla podanego meczu zbierz AKTUALNE dane (sezon 2024/2025):
+1. Forma ostatnich 5-8 meczów obu drużyn (wyniki, gole, kartki)
+2. Historia h2h — ostatnie 5 bezpośrednich spotkań
+3. Pozycja w tabeli, punkty, różnica goli
+4. Kontuzje i zawieszenia kluczowych zawodników
+5. Statystyki: średnia goli/mecz, BTTS%, clean sheet%, kartki/mecz, cornery/mecz
+6. Znaczenie meczu (derby, relegacja, tytuł)
+7. Forma domowa/wyjazdowa osobno
+Podaj SZCZEGÓŁOWY raport z liczbami. Nie generuj procentów — tylko fakty.`;
+
+const SYS_VALIDATOR = `Jesteś walidatorem modeli probabilistycznych dla piłki nożnej.
+Na podstawie raportu analitycznego wygeneruj 20 predykcji i sprawdź ich spójność.
+
+ZASADY WALIDACJI (OBOWIĄZKOWE):
+- win_home + draw + win_away = dokładnie 100
+- over15 >= over25 >= over35 (zawsze)
+- dc_1x = win_home + draw, dc_x2 = draw + win_away
+- Bazy: over25≈52%, btts≈50%, penalty≈28%, red_card≈17%, corner_over≈50%
+
+Odpowiedz WYŁĄCZNIE czystym JSON (zero markdown, zero komentarzy):
+{"events":{"win_home":52,"draw":24,"win_away":24,"dc_1x":76,"dc_x2":48,"btts":55,"over15":72,"over25":58,"over35":32,"exact23":38,"ht_home":40,"ht_draw":38,"ht_over15":35,"btts_2h":48,"clean_home":28,"clean_away":22,"yellow_over4":46,"red_card":16,"penalty":27,"corner_over":51},"confidence":4,"key_factors":["Czynnik 1","Czynnik 2","Czynnik 3"],"data_quality":"good","validation_notes":"Notatka"}`;
+
+const SYS_VERIFIER = `Jesteś zbieraczem wyników piłkarskich. Znajdź rzeczywisty wynik zakończonego meczu.
+Odpowiedz WYŁĄCZNIE czystym JSON:
+{"found":true,"score_home":2,"score_away":1,"ht_score_home":1,"ht_score_away":0,"yellow_cards":3,"red_cards":0,"penalties":false,"corners":9}
+Jeśli mecz nie zakończony lub nie znaleziony: {"found":false}`;
+
+// ─── SCREENS ─────────────────────────────────────────────────────────────────
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0,0);
+  if (name === 'home') renderHome();
+  if (name === 'history') renderHistory();
+}
+
+function showSync(on) {
+  document.getElementById('sync-badge').style.display = on ? 'block' : 'none';
+}
+
+// ─── HOME ────────────────────────────────────────────────────────────────────
+
+function renderHome() {
+  const grid = document.getElementById('leagues-grid');
+  const rounds = state.storage?.rounds || {};
+  grid.innerHTML = LEAGUES.map(lg => {
+    const analyzed = Object.values(rounds).filter(r=>r.leagueId===lg.id)
+      .reduce((a,r)=>a+(r.matches||[]).filter(m=>m.predictions).length, 0);
+    return `<button class="league-card" onclick="selectLeague('${lg.id}')"
+      onmouseenter="this.style.borderColor='${lg.color}';this.style.boxShadow='0 8px 30px ${lg.color}33'"
+      onmouseleave="this.style.borderColor='';this.style.boxShadow=''">
+      <div class="league-card-bar" style="background:${lg.color}"></div>
+      <span class="league-flag">${lg.flag}</span>
+      <div class="league-name">${lg.name}</div>
+      <div class="league-country">${lg.country}</div>
+      ${analyzed>0?`<div class="league-count">${analyzed} analiz</div>`:''}
+    </button>`;
+  }).join('');
+}
+
+function selectLeague(id) {
+  state.currentLeague = LEAGUES.find(l=>l.id===id);
+  state.currentStorageKey = `round_${id}_current`;
+  renderRound();
+  showScreen('round');
+}
+
+// ─── ROUND ───────────────────────────────────────────────────────────────────
+
+function renderRound() {
+  const lg = state.currentLeague;
+  document.getElementById('round-flag').textContent = lg.flag;
+  document.getElementById('round-league-name').textContent = lg.name;
+  const saved = state.storage?.rounds?.[state.currentStorageKey];
+  if (saved?.roundName) document.getElementById('round-name-sub').textContent = saved.roundName;
+  renderFixtures(saved?.matches || []);
+}
+
+function renderFixtures(matches) {
+  const list = document.getElementById('fixture-list');
+  const empty = document.getElementById('fixtures-empty');
+  if (!matches.length) { empty.style.display='block'; list.innerHTML=''; return; }
+  empty.style.display='none';
+  list.innerHTML = matches.map((m,i) => {
+    const hasPred = !!m.predictions;
+    return `<button class="fixture-card" onclick="selectMatch(${i})">
+      <div>
+        <div class="fixture-teams">${m.home} <span>vs</span> ${m.away}</div>
+        ${m.date?`<div class="fixture-date">${m.date} ${m.time||''}</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${hasPred?`<span class="badge-done">✓ Przeanalizowany</span>`:''}
+        <span style="color:var(--accent2);font-size:18px">→</span>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+async function fetchFixtures() {
+  const btn = document.getElementById('btn-fetch');
+  btn.disabled = true; btn.textContent = 'Szukam meczów...';
+  try {
+    const raw = await callClaude(
+      `Wyszukaj nadchodzące mecze piłkarskie i zwróć TYLKO czysty JSON (zero markdown):
+{"round":"Kolejka 32","matches":[{"home":"Team A","away":"Team B","date":"2025-03-22","time":"15:00"}]}
+Max 12 meczów. Data YYYY-MM-DD. Czas HH:MM.`,
+      `Znajdź wszystkie mecze w nadchodzącej kolejce/rundzie: ${state.currentLeague.name}, sezon 2024/2025.`,
+      true
+    );
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Brak JSON w odpowiedzi');
+    const parsed = JSON.parse(match[0]);
+    const matches = (parsed.matches||[]).map((m,i)=>({...m, id:`${state.currentLeague.id}_${i}_${Date.now()}`}));
+    const roundName = parsed.round || 'Nadchodząca kolejka';
+    document.getElementById('round-name-sub').textContent = roundName;
+    state.currentRoundName = roundName;
+    saveRound(matches, roundName);
+    renderFixtures(matches);
+  } catch(e) { alert('Błąd pobierania: ' + e.message); }
+  btn.disabled = false; btn.textContent = '🔍 Pobierz mecze z internetu';
+}
+
+function toggleManual() {
+  const box = document.getElementById('manual-box');
+  box.style.display = box.style.display==='none' ? 'block' : 'none';
+}
+
+function addManual() {
+  const lines = document.getElementById('manual-input').value.trim().split('\n').filter(Boolean);
+  const saved = state.storage?.rounds?.[state.currentStorageKey];
+  const existing = saved?.matches || [];
+  const newMatches = lines.map((line,i)=>{
+    const parts = line.split(/\s+vs\.?\s+/i);
+    return {id:`manual_${i}_${Date.now()}`, home:parts[0]?.trim()||'?', away:parts[1]?.trim()||'?', date:'', time:''};
+  });
+  const all = [...existing, ...newMatches];
+  saveRound(all, state.currentRoundName || 'Kolejka');
+  renderFixtures(all);
+  document.getElementById('manual-input').value = '';
+  document.getElementById('manual-box').style.display = 'none';
+}
+
+function saveRound(matches, roundName) {
+  if (!state.storage.rounds) state.storage.rounds = {};
+  state.storage.rounds[state.currentStorageKey] = {
+    leagueId: state.currentLeague.id, roundName, matches
+  };
+  gistSave();
+}
+
+function selectMatch(idx) {
+  const saved = state.storage?.rounds?.[state.currentStorageKey];
+  state.currentMatch = saved?.matches?.[idx] || null;
+  if (!state.currentMatch) return;
+  renderMatch();
+  showScreen('match');
+}
+
+// ─── MATCH ───────────────────────────────────────────────────────────────────
+
+function renderMatch() {
+  const m = state.currentMatch;
+  const lg = state.currentLeague;
+  document.getElementById('mh-flag').textContent = lg.flag;
+  document.getElementById('mh-league').textContent = `${lg.name} · ${state.currentRoundName}`;
+  document.getElementById('mh-title').innerHTML = `${m.home} <span class="vs">vs</span> ${m.away}`;
+  document.getElementById('mh-date').textContent = m.date ? `${m.date} ${m.time||''}` : '';
+
+  document.getElementById('match-analyze-cta').style.display = 'block';
+  document.getElementById('match-pipeline').style.display = 'none';
+  document.getElementById('match-error').style.display = 'none';
+  document.getElementById('match-results').style.display = 'none';
+  document.getElementById('mh-result').innerHTML = '';
+
+  if (m.actual?.found) renderResult(m.actual, m.predictions);
+  if (m.predictions) renderPredictions(m.predictions, m.actual ? verifyPredictions(m.predictions, m.actual) : {});
+}
+
+async function runAnalysis() {
+  const m = state.currentMatch;
+  const lg = state.currentLeague;
+  document.getElementById('match-analyze-cta').style.display = 'none';
+  document.getElementById('match-pipeline').style.display = 'block';
+  document.getElementById('match-error').style.display = 'none';
+
+  const dot1 = document.getElementById('dot1'), dot2 = document.getElementById('dot2');
+  const s1 = document.getElementById('step1-text'), s2 = document.getElementById('step2-text');
+  dot1.className='pipeline-dot dot-active'; s1.style.color='#a5b4fc';
+  dot2.className='pipeline-dot dot-idle'; s2.style.color='var(--text4)';
+
+  try {
+    const report = await callClaude(SYS_RESEARCHER,
+      `Liga: ${lg.name}\nGospodarze: ${m.home}\nGoście: ${m.away}\nData: ${m.date||'nadchodzący'}\nSezon: 2024/2025\n\nZbierz aktualne dane i przygotuj raport analityczny.`,
+      true
+    );
+    dot1.className='pipeline-dot dot-done'; s1.innerHTML += ' <span style="color:var(--green)">✓</span>';
+    dot2.className='pipeline-dot dot-active'; s2.style.color='#fcd34d';
+
+    const rawPred = await callClaude(SYS_VALIDATOR,
+      `Mecz: ${m.home} vs ${m.away} (${lg.name})\n\nRAAPORT:\n${report}\n\nWygeneruj 20 predykcji. Odpowiedz TYLKO JSON.`,
+      false
+    );
+    dot2.className='pipeline-dot dot-done'; s2.innerHTML += ' <span style="color:var(--green)">✓</span>';
+
+    const jsonMatch = rawPred.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Agent 2 nie zwrócił JSON');
+    const pred = JSON.parse(jsonMatch[0]);
+
+    // Save
+    const saved = state.storage.rounds[state.currentStorageKey];
+    saved.matches = saved.matches.map(mx =>
+      mx.id === m.id ? {...mx, predictions:pred, report} : mx
+    );
+    state.currentMatch = {...m, predictions:pred, report};
+    gistSave();
+
+    document.getElementById('match-pipeline').style.display = 'none';
+    renderPredictions(pred, {});
+  } catch(e) {
+    document.getElementById('match-pipeline').style.display = 'none';
+    const errBox = document.getElementById('match-error');
+    errBox.style.display = 'block';
+    errBox.textContent = '✗ ' + e.message;
+  }
+}
+
+function renderResult(actual, predictions) {
+  const sh=actual.score_home, sa=actual.score_away;
+  const v = predictions ? verifyPredictions(predictions, actual) : {};
+  const hits = Object.values(v).filter(Boolean).length;
+  const total = Object.keys(v).length;
+  document.getElementById('mh-result').innerHTML = `
+    <div class="result-box">
+      <span class="result-score">${sh} — ${sa}</span>
+      <span class="result-info">Wynik rzeczywisty${total?` · ${hits}/${total} trafień (${Math.round(hits/total*100)}%)`:''}
+      </span>
+    </div>`;
+}
+
+function renderPredictions(pred, verification) {
+  document.getElementById('match-analyze-cta').style.display = 'none';
+  document.getElementById('match-results').style.display = 'block';
+
+  // Meta row
+  const meta = document.getElementById('meta-row');
+  const hasVerif = Object.keys(verification).length > 0;
+  meta.innerHTML = `
+    <div class="meta-pill">Pewność: <b>${'★'.repeat(pred.confidence||3)}${'☆'.repeat(5-(pred.confidence||3))}</b></div>
+    <div class="meta-pill">Dane: <b style="color:${pred.data_quality==='good'?'var(--green)':pred.data_quality==='medium'?'var(--amber)':'var(--red)'}">${pred.data_quality||'?'}</b></div>
+    ${!hasVerif?`<button class="btn-verify" onclick="runVerification()">🔍 Weryfikuj wynik</button>`:''}
+  `;
+
+  // Key factors
+  const kf = document.getElementById('key-factors');
+  if (pred.key_factors?.length) {
+    kf.style.display = 'block';
+    kf.innerHTML = `<div class="kf-title">Kluczowe czynniki</div>` +
+      pred.key_factors.map(f=>`<div class="kf-item"><span class="kf-bullet">▸</span><span class="kf-text">${f}</span></div>`).join('') +
+      (pred.validation_notes?`<div class="val-note">Notatka walidatora: ${pred.validation_notes}</div>`:'');
+  }
+
+  // Groups
+  const groups = {};
+  EVENTS.forEach(ev => { (groups[ev.group]=groups[ev.group]||[]).push(ev); });
+  const container = document.getElementById('events-groups');
+  container.innerHTML = Object.entries(groups).map(([grp, events]) => `
+    <div class="group-section">
+      <div class="group-header">
+        <div class="group-bar" style="background:${GROUP_COLORS[grp]}"></div>
+        <span class="group-label">${grp}</span>
+      </div>
+      <div class="events-list">
+        ${events.map(ev => {
+          const val = pred.events?.[ev.key] ?? 0;
+          const hit = verification[ev.key];
+          const color = val>=65?'var(--green)':val>=45?'var(--amber)':'var(--text3)';
+          const dotHtml = hit!==undefined
+            ? `<span class="result-dot ${hit?'dot-green':'dot-red'}"></span>` : '';
+          return `<div class="event-row">
+            <div class="event-label">${ev.label}</div>
+            <div class="event-bar-wrap">
+              <div class="event-bar-fill" style="width:${val}%;background:${color}"></div>
+            </div>
+            <span class="event-pct">${val}%</span>
+            ${dotHtml}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+async function runVerification() {
+  const m = state.currentMatch;
+  const lg = state.currentLeague;
+  const btn = document.querySelector('.btn-verify');
+  if (btn) { btn.disabled=true; btn.textContent='Weryfikuję...'; }
+  try {
+    const raw = await callClaude(SYS_VERIFIER,
+      `Znajdź wynik meczu: ${m.home} vs ${m.away}, liga: ${lg.name}, data: ${m.date}. Zwróć JSON.`,
+      true
+    );
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('Brak JSON');
+    const actual = JSON.parse(match[0]);
+    if (!actual.found) { alert('Nie znaleziono wyniku meczu.'); return; }
+
+    const saved = state.storage.rounds[state.currentStorageKey];
+    saved.matches = saved.matches.map(mx =>
+      mx.id === m.id ? {...mx, actual} : mx
+    );
+    state.currentMatch = {...m, actual};
+    gistSave();
+
+    renderResult(actual, m.predictions);
+    const v = verifyPredictions(m.predictions, actual);
+    renderPredictions(m.predictions, v);
+  } catch(e) { alert('Błąd weryfikacji: ' + e.message); }
+  if (btn) { btn.disabled=false; btn.textContent='🔍 Weryfikuj wynik'; }
+}
+
+function verifyPredictions(pred, actual) {
+  if (!actual?.found) return {};
+  const sh=actual.score_home, sa=actual.score_away, total=sh+sa;
+  const hh=actual.ht_score_home||0, ha=actual.ht_score_away||0;
+  return {
+    win_home: sh>sa, draw: sh===sa, win_away: sa>sh,
+    dc_1x: sh>=sa, dc_x2: sa>=sh,
+    btts: sh>0&&sa>0, over15: total>1, over25: total>2, over35: total>3,
+    exact23: total===2||total===3,
+    ht_home: hh>ha, ht_draw: hh===ha, ht_over15: (hh+ha)>1,
+    btts_2h: (sh-hh)>0&&(sa-ha)>0,
+    clean_home: sa===0, clean_away: sh===0,
+    yellow_over4: actual.yellow_cards>4, red_card: actual.red_cards>0,
+    penalty: actual.penalties, corner_over: actual.corners>8.5,
+  };
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────────────────────
+
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  const history = state.storage?.history || [];
+  if (!history.length) {
+    container.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Brak zarchiwizowanych kolejek</p></div>`;
+    return;
+  }
+  container.innerHTML = history.map(round => {
+    const lg = LEAGUES.find(l=>l.id===round.leagueId);
+    const withVerif = (round.matches||[]).filter(m=>m.actual?.found);
+    const totalHits = withVerif.reduce((acc,m)=>{
+      const v=verifyPredictions(m.predictions,m.actual);
+      return acc+Object.values(v).filter(Boolean).length;
+    }, 0);
+    const totalPoss = withVerif.reduce((acc,m)=>{
+      const v=verifyPredictions(m.predictions,m.actual);
+      return acc+Object.keys(v).length;
+    }, 0);
+    const pct = totalPoss>0 ? Math.round(totalHits/totalPoss*100) : null;
+    const pctColor = pct>=60?'var(--green)':pct>=45?'var(--amber)':'var(--red)';
+    return `<div class="history-card">
+      <div class="history-card-header">
+        <div class="history-league">
+          <span>${lg?.flag||''}</span>
+          <div>
+            <div class="history-league-name">${lg?.name||round.leagueId} · ${round.roundName||''}</div>
+            <div class="history-date">Zarchiwizowano: ${round.archivedAt?.slice(0,10)||'?'}</div>
+          </div>
+        </div>
+        ${pct!==null?`<div class="history-pct"><div class="history-pct-val" style="color:${pctColor}">${pct}%</div><div class="history-pct-label">skuteczność</div></div>`:''}
+      </div>
+      ${withVerif.map(m=>{
+        const v=verifyPredictions(m.predictions,m.actual);
+        const mHits=Object.values(v).filter(Boolean).length;
+        const mTotal=Object.keys(v).length;
+        const ok=mHits/mTotal>=0.6;
+        return `<div class="history-match-row">
+          <span class="history-match-teams">${m.home} vs ${m.away}</span>
+          <div class="history-match-right">
+            <span class="history-score">${m.actual.score_home}–${m.actual.score_away}</span>
+            <span class="history-hits" style="background:${ok?'#052e16':'#1c0505'};color:${ok?'#4ade80':'#f87171'}">${mHits}/${mTotal}</span>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+}
+
+function archiveOld() {
+  const now = new Date();
+  const rounds = state.storage.rounds || {};
+  let archived = 0;
+  Object.entries(rounds).forEach(([key, round]) => {
+    const dates = (round.matches||[]).map(m=>m.date).filter(Boolean).sort();
+    if (dates.length && new Date(dates[dates.length-1]) < now) {
+      if (!state.storage.history) state.storage.history = [];
+      state.storage.history.push({...round, archivedAt:now.toISOString()});
+      delete state.storage.rounds[key];
+      archived++;
+    }
+  });
+  if (archived>0) { gistSave(); renderHistory(); alert(`Zarchiwizowano ${archived} kolejek.`); }
+  else alert('Brak kolejek do archiwizacji (data ostatniego meczu jeszcze nie minęła).');
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+
+function openSettings() {
+  document.getElementById('inp-token').value = state.token;
+  document.getElementById('inp-gist').value = state.gistId;
+  document.getElementById('modal-msg').style.display = 'none';
+  document.getElementById('settings-modal').style.display = 'flex';
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').style.display = 'none';
+}
+
+function saveSettings() {
+  const t = document.getElementById('inp-token').value.trim();
+  const g = document.getElementById('inp-gist').value.trim();
+  state.token = t; state.gistId = g;
+  localStorage.setItem('fp_token', t);
+  localStorage.setItem('fp_gist', g);
+  closeSettings();
+  if (t && g) gistLoad();
+}
+
+function showModalMsg(msg, ok) {
+  const el = document.getElementById('modal-msg');
+  el.textContent = msg;
+  el.className = 'form-msg ' + (ok?'ok':'err');
+  el.style.display = 'block';
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+(async () => {
+  renderHome();
+  if (state.token && state.gistId) await gistLoad();
+  renderHome();
+})();
+</script>
+</body>
+</html>
